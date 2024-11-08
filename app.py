@@ -5,9 +5,9 @@ from os import getenv
 
 dotenv.load_dotenv()
 
-TOKEN_TELEGRAM = getenv('TOKEN_TELEGRAM')
+TOKEN_TELEGRAM = getenv('7327311762:AAF70LYsrczt5oL7186NMry63LrkkP3N-CY')
 
-bot = telebot.TeleBot(TOKEN_TELEGRAM)
+bot = telebot.TeleBot("7327311762:AAF70LYsrczt5oL7186NMry63LrkkP3N-CY")
 
 user_choices = {}
 
