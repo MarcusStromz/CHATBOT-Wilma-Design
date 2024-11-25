@@ -1,41 +1,49 @@
-
 import telebot
 import dotenv
 from os import getenv
 
 dotenv.load_dotenv()
 
-TOKEN_TELEGRAM = getenv('7327311762:AAF70LYsrczt5oL7186NMry63LrkkP3N-CY')
+# Token do bot
+TOKEN_TELEGRAM = getenv('TOKEN_TELEGRAM')
 
-bot = telebot.TeleBot("7327311762:AAF70LYsrczt5oL7186NMry63LrkkP3N-CY")
+# Criação do bot
+bot = telebot.TeleBot(TOKEN_TELEGRAM)
 
+# Dicionário para armazenar as escolhas do usuário
 user_choices = {}
 
+# Comandos disponíveis
 comandos = (
     '/catalogo - Ver catálogo\n'
     '/agendar - Agendar serviço\n'
     '/suporte - Suporte\n'
 )
 
+# Função para mensagem inicial /start
 @bot.message_handler(commands=['start'])
 def mensagem_boas_vindas(message):
     nome_usuario = message.from_user.first_name
     mensagem = f'Olá, {nome_usuario}, meu nome é Wilma Santana e sou design de sobrancelhas e micropigmentação. Sou especialista em sobrancelhas sutilmente marcantes e utilizo o método exclusivo Unic Brows. Em que posso ajudar?\n\nEscolha uma das opções abaixo:\n{comandos}'
     bot.send_message(message.chat.id, mensagem)
+    print(f"[START] {message.chat.id} - {message.from_user.first_name} iniciou o bot.")
 
+# Função para ver o catálogo
 @bot.message_handler(commands=['catalogo'])
 def ver_catalogo(message):
-    with open('C:/Users/marcu/Downloads/Catálogo Sobrancelha s.pdf', 'rb') as catalogo:
-        bot.send_document(message.chat.id, catalogo)
-    bot.send_message(
-        message.chat.id,
-        "Escolha uma das opções abaixo:\n/opcao_servico - Escolher Serviço\n/menu_principal - Voltar ao menu principal"
-    )
+    print(f"[CATÁLOGO] {message.chat.id} - Enviando catálogo.")
+    try:
+        with open('C:/Users/marcu/Downloads/Catálogo Sobrancelha s.pdf', 'rb') as catalogo:
+            bot.send_document(message.chat.id, catalogo)
+        bot.send_message(
+            message.chat.id,
+            "Escolha uma das opções abaixo:\n/opcao_servico - Escolher Serviço\n/menu_principal - Voltar ao menu principal"
+        )
+    except Exception as e:
+        print(f"[ERRO CATÁLOGO] {e}")
+        bot.send_message(message.chat.id, "Desculpe, não conseguimos enviar o catálogo no momento.")
 
-@bot.message_handler(commands=['opcao_servico'])
-def opcao_servico(message):
-    agendar_servico(message)  # Chama a função que inicia o agendamento
-
+# Função para agendar serviço
 @bot.message_handler(commands=['agendar'])
 def agendar_servico(message):
     user_choices[message.chat.id] = "aguardando_servico"
@@ -46,9 +54,12 @@ def agendar_servico(message):
         "3. Outros Procedimentos\n"
     )
     bot.send_message(message.chat.id, opcoes)
+    print(f"[AGENDAR] {message.chat.id} - Enviando opções para agendar serviço.")
 
+# Função para escolher o serviço
 @bot.message_handler(func=lambda message: message.chat.id in user_choices and user_choices[message.chat.id] == "aguardando_servico" and message.text in ['1', '2', '3'])
 def escolher_servico(message):
+    print(f"[ESCOLHER SERVIÇO] {message.chat.id} - Serviço escolhido: {message.text}")
     if message.text == '1':
         servicos = (
             "Escolha um serviço de Sobrancelha:\n"
@@ -76,23 +87,23 @@ def escolher_servico(message):
     user_choices[message.chat.id] = "aguardando_servico_escolhido"
     bot.send_message(message.chat.id, servicos)
 
+# Função para escolher o serviço detalhado
 @bot.message_handler(func=lambda message: message.chat.id in user_choices and user_choices[message.chat.id] == "aguardando_servico_escolhido" and message.text in ['1', '2', '3', '4', '5'])
 def servico_escolhido(message):
-    if message.text in ['1', '2', '3', '4', '5']:
-        # Armazenar a escolha do serviço
-        if user_choices[message.chat.id] == "aguardando_servico_escolhido":
-            user_choices[message.chat.id] = "servico_selecionado"
-        
-        # Enviar opções para marcar horário ou escolher outro serviço
-        opcoes_finais = (
-            "Escolha:\n"
-            "1. Marcar horário\n"
-            "2. Escolher outro serviço\n"
-        )
-        bot.send_message(message.chat.id, opcoes_finais)
+    print(f"[SERVIÇO ESCOLHIDO] {message.chat.id} - Serviço escolhido: {message.text}")
+    user_choices[message.chat.id] = "servico_selecionado"
+    
+    opcoes_finais = (
+        "Escolha:\n"
+        "1. Marcar horário\n"
+        "2. Escolher outro serviço\n"
+    )
+    bot.send_message(message.chat.id, opcoes_finais)
 
+# Função para opções finais (marcar horário ou escolher outro serviço)
 @bot.message_handler(func=lambda message: message.chat.id in user_choices and user_choices[message.chat.id] == "servico_selecionado" and message.text in ['1', '2'])
 def opcoes_final(message):
+    print(f"[OPÇÕES FINAIS] {message.chat.id} - Escolha final: {message.text}")
     if message.text == '1':
         bot.send_message(message.chat.id, "Ótimo! Vamos marcar o seu horário. Funcionamos de segunda a sexta de 14:00 até 20:00 e Sábado de 8:00 até 17:00. Por favor, envie o horário desejado.")
         user_choices[message.chat.id] = "aguardando_horario"
@@ -101,21 +112,23 @@ def opcoes_final(message):
                                             "/agendar - Agendar novo serviço\n"
                                             "/menu_principal - Voltar ao menu principal")
 
+# Função para receber horário do usuário
 @bot.message_handler(func=lambda message: message.chat.id in user_choices and user_choices[message.chat.id] == "aguardando_horario")
 def receber_horario(message):
-    # Armazenar o horário desejado
+    print(f"[HORÁRIO] {message.chat.id} - Horário desejado: {message.text}")
     user_choices[message.chat.id] = "horario_selecionado"
     bot.send_message(message.chat.id, "Perfeito, logo entraremos em contato confirmando seu agendamento. Gostaria de avaliar o atendimento com um feedback?")
     
-    # Oferecer opções de feedback
     feedback_opcoes = (
         "1. Sim\n"
         "2. Não\n"
     )
     bot.send_message(message.chat.id, feedback_opcoes)
 
+# Função para receber o feedback do usuário
 @bot.message_handler(func=lambda message: message.chat.id in user_choices and user_choices[message.chat.id] == "horario_selecionado" and message.text in ['1', '2'])
 def feedback_usuario(message):
+    print(f"[FEEDBACK] {message.chat.id} - Feedback escolhido: {message.text}")
     if message.text == '1':
         bot.send_message(message.chat.id, "Por favor, deixe seu feedback.")
         user_choices[message.chat.id] = "aguardando_feedback"
@@ -123,21 +136,37 @@ def feedback_usuario(message):
         bot.send_message(message.chat.id, "Agradecemos pelo seu atendimento! Voltando ao menu principal.")
         user_choices[message.chat.id] = None  # Reseta a escolha do usuário
 
+# Função para receber o feedback
 @bot.message_handler(func=lambda message: message.chat.id in user_choices and user_choices[message.chat.id] == "aguardando_feedback")
 def receber_feedback(message):
     feedback = message.text
-    bot.send_message(message.chat.id, f"Agradecemos pelo seu feedback: '{feedback}'! Voltando ao menu principal.")
+    print(f"[RECEBER FEEDBACK] {message.chat.id} - Feedback recebido: {feedback}")
+    if feedback:  # Verificar se o feedback não é vazio
+        bot.send_message(message.chat.id, f"Agradecemos pelo seu feedback: '{feedback}'! Voltando ao menu principal.")
+    else:
+        bot.send_message(message.chat.id, "Por favor, insira um feedback válido.")
     user_choices[message.chat.id] = None  # Reseta a escolha do usuário
 
+# Função de suporte
 @bot.message_handler(commands=['suporte'])
 def suporte(message):
     bot.send_message(message.chat.id, 'Você escolheu Suporte. Como posso ajudar?')
 
-@bot.message_handler(func=lambda message: 'Bom dia' in message.text)
+# Função para responder ao usuário com "Bom dia"
+@bot.message_handler(func=lambda message: message.text and 'Bom dia' in message.text)
 def responde_usuario(message): 
     nome_usuario = message.from_user.first_name
     resposta = f'Olá, {nome_usuario}. Em que posso ajudar?'
     bot.reply_to(message, resposta)
 
+# Função genérica para logar todas as mensagens recebidas (ajuda na depuração)
+@bot.message_handler(func=lambda message: True)
+def log_message(message):
+    print(f"[LOG GERAL] {message.chat.id} - Mensagem recebida: {message.text}")
+    # Responde a qualquer mensagem para confirmar recebimento
+    bot.send_message(message.chat.id, "Recebi sua mensagem!")
+
+# Iniciar o bot
 if __name__ == '__main__':
-    bot.polling()
+    print("[BOT INICIADO] Aguardando interações...")
+    bot.polling(none_stop=True)
