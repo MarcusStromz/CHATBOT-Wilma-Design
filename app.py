@@ -24,9 +24,24 @@ comandos = (
 @bot.message_handler(commands=['start'])
 def mensagem_boas_vindas(message):
     nome_usuario = message.from_user.first_name
-    mensagem = f'Olá, {nome_usuario}, meu nome é Wilma Santana e sou design de sobrancelhas e micropigmentação. Sou especialista em sobrancelhas sutilmente marcantes e utilizo o método exclusivo Unic Brows. Em que posso ajudar?\n\nEscolha uma das opções abaixo:\n{comandos}'
+    mensagem = (
+        f"Olá, {nome_usuario}, meu nome é Wilma Santana e sou design de sobrancelhas e micropigmentação.\n"
+        "Antes de continuarmos, por favor, informe o seu número de telefone:"
+    )
     bot.send_message(message.chat.id, mensagem)
-    print(f"[START] {message.chat.id} - {message.from_user.first_name} iniciou o bot.")
+    user_choices[message.chat.id] = "aguardando_telefone"
+
+# Função para capturar qualquer número de telefone
+@bot.message_handler(func=lambda message: user_choices.get(message.chat.id) == "aguardando_telefone")
+def capturar_telefone(message):
+    numero_telefone = message.text
+    print(f"[TELEFONE] {message.chat.id} - Número informado: {numero_telefone}")
+    bot.send_message(
+        message.chat.id,
+        "Obrigado! Seu número foi registrado. Agora você pode acessar o catálogo. "
+        "Use o comando /catalogo para visualizá-lo."
+    )
+    user_choices[message.chat.id] = None  # Reseta o estado
 
 # Função para ver o catálogo
 @bot.message_handler(commands=['catalogo'])
@@ -37,7 +52,7 @@ def ver_catalogo(message):
             bot.send_document(message.chat.id, catalogo)
         bot.send_message(
             message.chat.id,
-            "Escolha uma das opções abaixo:\n/opcao_servico - Escolher Serviço\n/menu_principal - Voltar ao menu principal"
+            "Escolha uma das opções abaixo:\n/agendar - Escolher Serviço\n/menu_principal - Voltar ao menu principal"
         )
     except Exception as e:
         print(f"[ERRO CATÁLOGO] {e}")
